@@ -1,4 +1,4 @@
-[CmdletBinding()]
+﻿[CmdletBinding()]
 param(
     [switch]$Local,
     [switch]$Force,
@@ -6,6 +6,10 @@ param(
     [ValidateSet('win-x64','win-arm64')][string]$Runtime = 'win-x64'
 )
 
+# Set UTF-8 encoding for console and pipe output
+$OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding = [System.Text.Encoding]::UTF8
 $ErrorActionPreference = 'Stop'
 $repoRoot = Split-Path $PSScriptRoot -Parent
 $installRoot = Join-Path $env:LOCALAPPDATA 'TaskbarAiMonitor'
