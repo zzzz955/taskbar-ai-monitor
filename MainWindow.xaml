@@ -1,0 +1,152 @@
+<Window x:Class="TaskbarAiMonitor.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:TaskbarAiMonitor"
+        mc:Ignorable="d"
+        Title="AI &amp; System Monitor"
+        Height="48"
+        SizeToContent="Width"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        Background="Transparent"
+        Topmost="True"
+        ShowInTaskbar="False"
+        ResizeMode="NoResize"
+        ToolTipService.InitialShowDelay="100"
+        ToolTipService.ShowDuration="30000"
+        ToolTipService.BetweenShowDelay="100"
+        ToolTipService.Placement="Top"
+        ToolTipService.VerticalOffset="-6"
+        MouseLeftButtonDown="Window_MouseLeftButtonDown"
+        MouseDoubleClick="Window_MouseDoubleClick"
+        Loaded="Window_Loaded"
+        Closing="Window_Closing"
+        Deactivated="Window_Deactivated">
+
+    <Window.Resources>
+        <Style TargetType="ToolTip">
+            <Setter Property="Placement" Value="Top" />
+            <Setter Property="VerticalOffset" Value="-8" />
+            <Setter Property="Background" Value="#F2161622" />
+            <Setter Property="Foreground" Value="#EEEEF2" />
+            <Setter Property="BorderBrush" Value="#44FFFFFF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,7" />
+            <Setter Property="FontSize" Value="11.5" />
+            <Setter Property="HasDropShadow" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="#F5151522"
+                                BorderBrush="#44FFFFFF"
+                                BorderThickness="1"
+                                CornerRadius="6"
+                                Padding="10,7">
+                            <Border.Effect>
+                                <DropShadowEffect BlurRadius="12" ShadowDepth="2" Opacity="0.7" Color="#000000" />
+                            </Border.Effect>
+                            <ContentPresenter />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="MetricItemContainer" TargetType="Border">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="Padding" Value="5,3" />
+            <Setter Property="Margin" Value="2,0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#22FFFFFF" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Border x:Name="MainContainer"
+            CornerRadius="8"
+            Background="#D9131317"
+            BorderBrush="#2AFFFFFF"
+            BorderThickness="1"
+            Padding="6,0,8,0"
+            Margin="0,2"
+            VerticalAlignment="Stretch">
+        <Border.Effect>
+            <DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.4" Color="#000000" />
+        </Border.Effect>
+
+        <!-- Right Click Context Menu -->
+        <Border.ContextMenu>
+            <ContextMenu>
+                <MenuItem Header="🔄 지금 새로고침" Click="MenuRefresh_Click" />
+                <MenuItem Header="📊 잔여량 / 사용량 전환" Click="MenuToggleMode_Click" />
+                <MenuItem Header="📅 주간 모드 (Weekly Mode)" IsCheckable="True" IsChecked="{Binding IsWeeklyMode}" Click="MenuWeeklyMode_Click" />
+                <MenuItem Header="🔍 설치된 LLM 다시 탐색" Click="MenuRedetect_Click" />
+                <Separator Background="#26FFFFFF" Margin="4,2" />
+                <MenuItem Header="🔴 Codex 주간 소진 (0% 고정)" IsCheckable="True" IsChecked="{Binding CodexExhausted}" Click="MenuToggleCodexExhausted_Click" />
+                <MenuItem Header="🔴 Claude 주간 소진 (0% 고정)" IsCheckable="True" IsChecked="{Binding ClaudeExhausted}" Click="MenuToggleClaudeExhausted_Click" />
+                <MenuItem Header="🔴 Gemini 쿼터 소진 (0% 고정)" IsCheckable="True" IsChecked="{Binding GeminiExhausted}" Click="MenuToggleGeminiExhausted_Click" />
+                <Separator Background="#26FFFFFF" Margin="4,2" />
+                <MenuItem Header="🧲 시작버튼 좌측에 스냅" Click="MenuSnapStartButton_Click" />
+                <MenuItem Header="📌 항상 위에 고정" IsCheckable="True" IsChecked="{Binding IsTopmost}" Click="MenuTopmost_Click" />
+                <MenuItem Header="🔒 위치 고정 (드래그 방지)" IsCheckable="True" IsChecked="{Binding IsLocked}" Click="MenuLock_Click" />
+                <MenuItem Header="🚀 윈도우 시작 시 자동 실행" IsCheckable="True" IsChecked="{Binding IsAutoStart}" Click="MenuAutoStart_Click" />
+                <Separator Background="#26FFFFFF" Margin="4,2" />
+                <MenuItem Header="⚙️ 설정 파일 열기 (config.json)" Click="MenuOpenConfig_Click" />
+                <MenuItem Header="📦 업데이트 / 설치 적용 (apply.bat)" Click="MenuApplyUpdate_Click" />
+                <MenuItem Header="{Binding VersionText, StringFormat='ℹ️ 버전: {0}'}" IsEnabled="False" />
+                <MenuItem Header="🚪 종료" Click="MenuExit_Click" />
+            </ContextMenu>
+        </Border.ContextMenu>
+
+        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+            <!-- Drag Handle / Grip -->
+            <Border Width="12" Height="20" Background="Transparent" Margin="2,0,4,0" ToolTip="드래그하여 이동&#x0a;더블클릭 시 시작버튼 좌측 스냅&#x0a;우클릭 시 상세 메뉴">
+                <TextBlock Text="⋮⋮" Foreground="#66FFFFFF" FontSize="11" VerticalAlignment="Center" HorizontalAlignment="Center" />
+            </Border>
+
+            <!-- CPU -->
+            <Border Style="{StaticResource MetricItemContainer}" DataContext="{Binding Cpu}" ToolTip="{Binding Detail}">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding IconGlyph}" Foreground="{Binding IconColorHex}" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Text}" Foreground="#EEEEF2" FontWeight="SemiBold" FontSize="11.5" Margin="3,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+            <!-- RAM -->
+            <Border Style="{StaticResource MetricItemContainer}" DataContext="{Binding Ram}" ToolTip="{Binding Detail}">
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="{Binding IconGlyph}" Foreground="{Binding IconColorHex}" FontSize="12" VerticalAlignment="Center" />
+                    <TextBlock Text="{Binding Text}" Foreground="#EEEEF2" FontWeight="SemiBold" FontSize="11.5" Margin="3,0,0,0" VerticalAlignment="Center" />
+                </StackPanel>
+            </Border>
+
+            <!-- Divider Line -->
+            <Rectangle Width="1" Height="14" Fill="#33FFFFFF" Margin="4,0" VerticalAlignment="Center" />
+
+            <!-- Dynamically Detected LLM Metrics -->
+            <ItemsControl ItemsSource="{Binding AiMetrics}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Style="{StaticResource MetricItemContainer}" ToolTip="{Binding Detail}">
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding IconGlyph}" Foreground="{Binding IconColorHex}" FontSize="12" VerticalAlignment="Center" />
+                                <TextBlock Text="{Binding Text}" Foreground="#EEEEF2" FontWeight="SemiBold" FontSize="11.5" Margin="3,0,0,0" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+    </Border>
+</Window>
