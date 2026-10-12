@@ -46,6 +46,19 @@ public class MonitorConfig
                 var config = JsonSerializer.Deserialize<MonitorConfig>(json);
                 if (config != null)
                 {
+                    // 리셋 일자가 지났으면 소진 플래그 자동 해제
+                    if (config.ClaudeResetTimeUtc.HasValue && DateTime.UtcNow >= config.ClaudeResetTimeUtc.Value)
+                    {
+                        config.ClaudeExhausted = false;
+                    }
+                    if (config.CodexResetTimeUtc.HasValue && DateTime.UtcNow >= config.CodexResetTimeUtc.Value)
+                    {
+                        config.CodexExhausted = false;
+                    }
+                    if (config.GeminiResetTimeUtc.HasValue && DateTime.UtcNow >= config.GeminiResetTimeUtc.Value)
+                    {
+                        config.GeminiExhausted = false;
+                    }
                     return config;
                 }
             }

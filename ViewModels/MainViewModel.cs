@@ -290,14 +290,20 @@ public class MainViewModel : INotifyPropertyChanged
                 {
                     if (results.TryGetValue(metric.Id.ToLowerInvariant(), out var data))
                     {
-                        metric.Percentage = data.Percent;
+                        int percent = data.Percent;
                         metric.Detail = data.Detail;
 
-                        // 특수 상태 및 소진 처리
-                        bool isExhausted = false;
-                        if (metric.Id == "codex" && _config.CodexExhausted) isExhausted = true;
-                        if (metric.Id == "claude" && _config.ClaudeExhausted) isExhausted = true;
-                        if (metric.Id == "gemini" && _config.GeminiExhausted) isExhausted = true;
+                        // 실시간 정상 데이터 수신 시 오래된 소진 플래그 자동 해제
+                        if (percent > 0)
+                        {
+                            if (metric.Id == "codex" && _config.CodexExhausted) { _config.CodexExhausted = false; _config.Save(); OnPropertyChanged(nameof(CodexExhausted)); }
+                            if (metric.Id == "claude" && _config.ClaudeExhausted) { _config.ClaudeExhausted = false; _config.Save(); OnPropertyChanged(nameof(ClaudeExhausted)); }
+                            if (metric.Id == "gemini" && _config.GeminiExhausted) { _config.GeminiExhausted = false; _config.Save(); OnPropertyChanged(nameof(GeminiExhausted)); }
+                        }
+
+                        bool isExhausted = (metric.Id == "codex" && _config.CodexExhausted) ||
+                                           (metric.Id == "claude" && _config.ClaudeExhausted) ||
+                                           (metric.Id == "gemini" && _config.GeminiExhausted);
 
                         if (isExhausted)
                         {
@@ -307,8 +313,10 @@ public class MainViewModel : INotifyPropertyChanged
                         }
                         else
                         {
-                            metric.IconColorHex = data.Percent == 0 ? "#EF4444" : GetDefaultColor(metric.Id);
-                            metric.IsWarning = _config.ShowRemainingQuota ? (data.Percent <= 10) : (data.Percent >= 90);
+                            int displayPercent = _config.ShowRemainingQuota ? percent : Math.Clamp(100 - percent, 0, 100);
+                            metric.Percentage = displayPercent;
+                            metric.IconColorHex = (displayPercent == 0 || (_config.ShowRemainingQuota && displayPercent <= 10)) ? "#EF4444" : GetDefaultColor(metric.Id);
+                            metric.IsWarning = _config.ShowRemainingQuota ? (displayPercent <= 10) : (displayPercent >= 90);
                         }
                     }
                 }
